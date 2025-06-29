@@ -40,7 +40,7 @@ struct DraggableCardView: View {
         .animation(.spring(response: 0.3), value: isDragging)
         .animation(.spring(response: 0.3), value: dragOffset)
         .gesture(
-            DragGesture(minimumDistance: 10)
+            DragGesture(minimumDistance: 15) // Slightly higher minimum for easier touch
                 .onChanged { value in
                     dragOffset = value.translation
                     isDragging = true
@@ -54,17 +54,17 @@ struct DraggableCardView: View {
                     // Process drag to determine new position
                     let dragDistance = sqrt(pow(value.translation.width, 2) + pow(value.translation.height, 2))
                     
-                    // Only process if dragged far enough
-                    if dragDistance > 30 {
+                    // More generous drag distance threshold
+                    if dragDistance > 40 {
                         let dragY = value.translation.height
                         let dragX = value.translation.width
                         
-                        // Simplified zone detection
+                        // Simplified zone detection with larger zones
                         if abs(dragY) > abs(dragX) {
                             // Vertical drag
-                            if dragY < -30 {
+                            if dragY < -40 {
                                 onMove(.lowHand)
-                            } else if dragY > 30 {
+                            } else if dragY > 40 {
                                 onMove(.highHand)
                             }
                         } else {
@@ -127,27 +127,34 @@ struct CardSlotView: View {
     
     var body: some View {
         ZStack {
-            // Slot background
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.1))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isValid ? Color.green : Color.red, lineWidth: 1)
-                )
-                .frame(width: 45, height: 60)
+            // Larger invisible drop zone for easier targeting
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: 55, height: 70) // Larger than visible card
             
-            // Card if present
-            if let card = card {
-                StaticCardView(card: card)
-            } else {
-                // Empty slot indicator
-                VStack {
-                    Image(systemName: "rectangle.dashed")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    Text("\(slotNumber)")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+            // Visible slot
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isValid ? Color.green : Color.red, lineWidth: 1)
+                    )
+                    .frame(width: 45, height: 60)
+                
+                // Card if present
+                if let card = card {
+                    StaticCardView(card: card)
+                } else {
+                    // Empty slot indicator
+                    VStack {
+                        Image(systemName: "rectangle.dashed")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        Text("\(slotNumber)")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                    }
                 }
             }
         }

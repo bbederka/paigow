@@ -28,32 +28,64 @@ struct HandLayoutView: View {
                 }
             }
             
-            // Individual card slots
-            HStack(spacing: 8) {
+            // Cards touching each other with larger drop zones
+            HStack(spacing: 2) { // Minimal spacing - cards almost touching
                 ForEach(0..<slots, id: \.self) { slotIndex in
                     let cardForSlot = slotIndex < cards.count ? cards[slotIndex] : nil
                     
                     ZStack {
-                        // Slot background
-                        CardSlotView(
-                            slotNumber: slotIndex + 1,
-                            card: nil,
-                            isValid: isValid
-                        )
+                        // Larger invisible drop zone around each card position
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(width: 55, height: 70) // Generous drop area
                         
-                        // Card if present
-                        if let card = cardForSlot {
-                            DraggableCardView(card: card, position: targetPosition) { newPosition in
-                                onCardMove(card, newPosition)
+                        // Card slot with tighter visual spacing
+                        ZStack {
+                            // Slot background - only show when empty
+                            if cardForSlot == nil {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(isValid ? Color.green.opacity(0.6) : Color.red.opacity(0.6), 
+                                                   lineWidth: 1, 
+                                                   lineCap: .round)
+                                            .dashPattern([5, 3])
+                                    )
+                                    .frame(width: 45, height: 60)
+                                
+                                // Empty slot indicator
+                                VStack {
+                                    Image(systemName: "rectangle.dashed")
+                                        .font(.caption)
+                                        .foregroundColor(.gray.opacity(0.7))
+                                    Text("\(slotIndex + 1)")
+                                        .font(.caption2)
+                                        .foregroundColor(.gray.opacity(0.7))
+                                }
+                            }
+                            
+                            // Card if present
+                            if let card = cardForSlot {
+                                DraggableCardView(card: card, position: targetPosition) { newPosition in
+                                    onCardMove(card, newPosition)
+                                }
                             }
                         }
                     }
+                    .contentShape(Rectangle()) // Make entire area tappable for drop zone
                 }
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isValid ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 2)
+                )
+        )
     }
 }
 
@@ -80,22 +112,46 @@ struct DealerHandLayoutView: View {
                 }
             }
             
-            // Individual card slots - no interaction
-            HStack(spacing: 8) {
+            // Dealer cards also touching for consistency
+            HStack(spacing: 2) { // Minimal spacing - cards touching
                 ForEach(0..<slots, id: \.self) { slotIndex in
                     let cardForSlot = slotIndex < cards.count ? cards[slotIndex] : nil
                     
-                    CardSlotView(
-                        slotNumber: slotIndex + 1,
-                        card: cardForSlot,
-                        isValid: true
-                    )
+                    ZStack {
+                        // Empty slot background for dealer (when not all cards shown)
+                        if cardForSlot == nil {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.green.opacity(0.5), lineWidth: 1)
+                                )
+                                .frame(width: 45, height: 60)
+                            
+                            VStack {
+                                Image(systemName: "rectangle.dashed")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                Text("\(slotIndex + 1)")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                        } else {
+                            StaticCardView(card: cardForSlot!)
+                        }
+                    }
                 }
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.green.opacity(0.3), lineWidth: 2)
+                )
+        )
     }
 }
 
@@ -108,7 +164,8 @@ struct DealerCardsGridView: View {
                 .font(.headline)
                 .foregroundColor(.secondary)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 4) {
+            // Tighter grid spacing for dealer's initial cards
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 7), spacing: 6) {
                 ForEach(dealerCards) { card in
                     StaticCardView(card: card)
                 }
@@ -169,5 +226,12 @@ struct HandValidationView: View {
                     .foregroundColor(.secondary)
             }
         }
+    }
+}
+
+// Extension to add dashed stroke
+extension Shape {
+    func dashPattern(_ pattern: [CGFloat]) -> some View {
+        self.stroke(style: StrokeStyle(lineWidth: 1, dash: pattern))
     }
 }
